@@ -1,0 +1,21 @@
+{
+  "name": "couchdb-resource",
+  "homepage": "",
+  "authors": [
+    "Jens Kühn <jens.kuehn@exxeta.com> (http://www.exxeta.com)"
+  ],
+  "description": "A minimal angularjs factory for couchDB.",
+  "main": [
+    "couchdb-resource.js"
+  ],
+  "keywords": [
+    "couchdb",
+    "angularjs",
+    "factory"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/Superkarl/couchdb-resource.git"
+  },
+  "license": "MIT"
+}

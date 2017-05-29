@@ -3,14 +3,24 @@ angular.module('dbResource', []).factory('dbResource', ['DB_CONFIG', 'APP_CONFIG
 
     function DbResourceFactory(collectionName) {
 
-        var url = function () {
-            if (!!securityModule && !!securityModule.isAuthenticated()) {
-                return DB_CONFIG.baseUrl + '/' + securityModule.currentUser.currentDbName;
-            } else if (!!DB_CONFIG.dbName_default) {
-                return DB_CONFIG.baseUrl + '/' + DB_CONFIG.dbName_default;
+        /**
+         * If a user is authenticated, returns the URL of his current database.
+         * If no current Database is set, it looks for a default database.
+         * If no default is given or if not authenticated, returns false.
+         *
+         * @returns String url
+         */
+
+        var getUrl = function () {
+            if (!!security.isAuthenticated()) {
+                if (!!security.currentUser.currentDbName) {
+                    return DB_CONFIG.baseUrl + '/' + security.currentUser.currentDbName;}
+                else if (!!DB_CONFIG.dbName_default) {
+                    return DB_CONFIG.baseUrl + '/' + DB_CONFIG.dbName_default; }
+                else {
+                    return false;}
             } else {
-                console.error("No BD_Name Found. Please log in with a valid User!")
-            }
+                return false;}
         };
         var defaultParams = {};
         if (DB_CONFIG.apiKey) {
@@ -127,8 +137,8 @@ angular.module('dbResource', []).factory('dbResource', ['DB_CONFIG', 'APP_CONFIG
                     return result;
                 },
                 function(error){
-                    ecb(undefined, error);
-                    db.queryActive = false;
+                    var ecb = errorcb || angular.noop;
+                    ecb(undefined, undefined);
                     return undefined;
                 }
             );
@@ -139,9 +149,16 @@ angular.module('dbResource', []).factory('dbResource', ['DB_CONFIG', 'APP_CONFIG
         };
         docResource.prototype.load = function(successcb, errorcbid, docParams) {
 
+            var url = getUrl();
+            if (url) {
+                var httpPromise = $http.get(url + '/' + id, {params: defaultParams});
+                return thenFactoryMethod(httpPromise, successcb, errorcb);
+            } else {
+                var ecb = errorcb || angular.noop;
+                ecb(undefined, undefined);
+                return undefined;
+            }
 
-            var httpPromise = $http.get(url() + '/' + id, {params: defaultParams});
-            return thenFactoryMethod(httpPromise, successcb, errorcb);
 
             var config = {
                 method: getMethod,
@@ -166,21 +183,34 @@ angular.module('dbResource', []).factory('dbResource', ['DB_CONFIG', 'APP_CONFIG
         Resource.allOld = function (cb, successcb, errorcb) {
 
             var params = {};
+            var url = getUrl();
+            if (url) {
+                // $http.get(appSettings.db + '/angular-cornercouch/_design/all/_view/projects');
+                var httpPromise = $http.get(url + '/_design/all/_view/' + collectionName,
+                    {params: angular.extend({}, defaultParams, params)});
+                return thenFactoryMethod(httpPromise, successcb, errorcb, true);
+            } else {
+                var ecb = errorcb || angular.noop;
+                ecb(undefined, undefined);
+                return undefined;
+            }
 
-            // $http.get(appSettings.db + '/angular-cornercouch/_design/all/_view/projects');
-            var httpPromise = $http.get(url() + '/_design/all/_view/' + collectionName,
-                {params: angular.extend({}, defaultParams, params)});
-            return thenFactoryMethod(httpPromise, successcb, errorcb, true);
 
             //return Resource.query({}, cb, errorcb);
         };
 
         Resource.all = function(qparams, successcb, errorcb) {
-
-            var httpPromise = $http.get(
-                url() + '/_all_docs/',
-                {params: angular.extend({}, defaultParams, getParams(qparams))});
-            return thenFactoryMethod(httpPromise, successcb, errorcb, true);
+            var url = getUrl();
+            if (url) {
+                var httpPromise = $http.get(
+                    url + '/_all_docs/',
+                    {params: angular.extend({}, defaultParams, getParams(qparams))});
+                return thenFactoryMethod(httpPromise, successcb, errorcb, true);
+            } else {
+                var ecb = errorcb || angular.noop;
+                ecb(undefined, undefined);
+                return undefined;
+            }
         };
 
 
@@ -188,13 +218,27 @@ angular.module('dbResource', []).factory('dbResource', ['DB_CONFIG', 'APP_CONFIG
         // Users.query('users.email.unique',viewValue, function(){}, function(){})
         Resource.queryOld = function (filterName, value, successcb, errorcb) {
             var params = {group: true, key: '"' + value + '"'};
-            var httpPromise = $http.get(url() + '/_design/filter/_view/' + filterName, {params: angular.extend({}, defaultParams, params)});
-            return thenFactoryMethod(httpPromise, successcb, errorcb, true);
+            var url = getUrl();
+            if (url) {
+                var httpPromise = $http.get(url + '/_design/filter/_view/' + filterName, {params: angular.extend({}, defaultParams, params)});
+                return thenFactoryMethod(httpPromise, successcb, errorcb, true);
+            } else {
+                var ecb = errorcb || angular.noop;
+                ecb(undefined, undefined);
+                return undefined;
+            }
         };
 
         Resource.getById = function (id, successcb, errorcb) {
-            var httpPromise = $http.get(url() + '/' + id, {params: defaultParams});
-            return thenFactoryMethod(httpPromise, successcb, errorcb);
+            var url = getUrl();
+            if (url) {
+                var httpPromise = $http.get(url + '/' + id, {params: defaultParams});
+                return thenFactoryMethod(httpPromise, successcb, errorcb);
+            } else {
+                var ecb = errorcb || angular.noop;
+                ecb(undefined, undefined);
+                return undefined;
+            }
         };
 
         //instance methods
@@ -202,13 +246,20 @@ angular.module('dbResource', []).factory('dbResource', ['DB_CONFIG', 'APP_CONFIG
         //DB Info
         Resource.prototype.getInfo = function () {
             var db = this;
-            return $http({
-                    method: "GET",
-                    url: url() + "/"
-                })
-                .success(function (data) {
-                    db.info = data;
-                });
+            var url = getUrl();
+            if (url) {
+                return $http({
+                        method: "GET",
+                        url: url + "/"
+                    })
+                    .success(function (data) {
+                        db.info = data;
+                    });
+            } else {
+                var ecb = errorcb || angular.noop;
+                ecb(undefined, undefined);
+                return undefined;
+            }
         };
 
         Resource.prototype.queryView = function(viewURL, qparams) {
@@ -244,18 +295,30 @@ angular.module('dbResource', []).factory('dbResource', ['DB_CONFIG', 'APP_CONFIG
             if(!security.isAdmin() && design == 'all'){
                 design = 'gActive';
             }
-            var httpPromise = $http.get(
-                url() + '/_design/'+encodeURIComponent(design)+'/_view/' + encodeURIComponent(view),
-                {params: angular.extend({}, defaultParams, getParams(qparams))});
-            return thenFactoryMethod(httpPromise, successcb, errorcb, true);
+            var url = getUrl();
+            if (url) {
+                var httpPromise = $http.get(
+                    url + '/_design/'+encodeURIComponent(design)+'/_view/' + encodeURIComponent(view),
+                    {params: angular.extend({}, defaultParams, getParams(qparams))});
+                return thenFactoryMethod(httpPromise, successcb, errorcb, true);
+            } else {
+                var ecb = errorcb || angular.noop;
+                ecb(undefined, undefined);
+                return undefined;
+            }
         };
 
         //scope.gbookdb.list("filter", "users.email.unique", { include_docs: true, descending: true, limit: 2 });
         Resource.list = function(design, list, view, qparams, successcb, errorcb) {
-            var httpPromise = $http.get(
-                url() + '/_design/'+encodeURIComponent(design)+'/_list/' + encodeURIComponent(list) + '/'+ encodeURIComponent(view),
-                {params: angular.extend({}, defaultParams, getParams(qparams))});
-            return thenFactoryMethod(httpPromise, successcb, errorcb, true);
+            var url = getUrl();
+            if (url) {
+                var httpPromise = $http.get(
+                    url + '/_design/'+encodeURIComponent(design)+'/_list/' + encodeURIComponent(list) + '/'+ encodeURIComponent(view),
+                    {params: angular.extend({}, defaultParams, getParams(qparams))});
+                return thenFactoryMethod(httpPromise, successcb, errorcb, true);
+            } else {
+                return undefined;
+            }
         };
 
         Resource.prototype.$id = function () {
@@ -279,48 +342,53 @@ angular.module('dbResource', []).factory('dbResource', ['DB_CONFIG', 'APP_CONFIG
             var doc = this;
 
             var saveAttach = function(uuid, attachId, successcb, errorcb){
-                var data = {
-                    '_id': uuid,
-                    'name': doc.file.filename,
-                    'url': attachId,
-                    'isImage': doc.file.isImage
-                };
-                if(doc.$id()){
-                    doc.meta_key['updated_at'] = new Date().toJSON();
-                    doc.meta_key['updated_by'] = security.currentUser['name'];
-                    doc.meta_key['version'] = APP_CONFIG.version;
-                }else{
-                    data.meta_key = {
-                        'created_at': new Date().toJSON(),
-                        'created_by': security.currentUser['name'],
-                        'version': APP_CONFIG.version,
+                var url = getUrl();
+                if (url) {
+                    var data = {
+                        '_id': uuid,
+                        'name': doc.file.filename,
+                        'url': attachId,
+                        'isImage': doc.file.isImage
                     };
-                }
-                data._attachments = {};
-                if(data.isImage){
-                    data._attachments[attachId] = {
-                        'content_type': doc.file.filetype,
-                        'data': doc.file.org.base64
-                    };
-                    data._attachments[attachId+'_thumb'] = {
-                        'content_type': doc.file.filetype,
-                        'data': doc.file.thumb.base64
-                    };
-                }else{
-                    data._attachments[attachId] = {
-                        'content_type': doc.file.filetype,
-                        'data': doc.file.org.base64
-                    };
-                }
+                    if(doc.$id()){
+                        doc.meta_key['updated_at'] = new Date().toJSON();
+                        doc.meta_key['updated_by'] = security.currentUser['name'];
+                        doc.meta_key['version'] = APP_CONFIG.version;
+                    }else{
+                        data.meta_key = {
+                            'created_at': new Date().toJSON(),
+                            'created_by': security.currentUser['name'],
+                            'version': APP_CONFIG.version,
+                        };
+                    }
+                    data._attachments = {};
+                    if(data.isImage){
+                        data._attachments[attachId] = {
+                            'content_type': doc.file.filetype,
+                            'data': doc.file.org.base64
+                        };
+                        data._attachments[attachId+'_thumb'] = {
+                            'content_type': doc.file.filetype,
+                            'data': doc.file.thumb.base64
+                        };
+                    }else{
+                        data._attachments[attachId] = {
+                            'content_type': doc.file.filetype,
+                            'data': doc.file.org.base64
+                        };
+                    }
 
 
-                var httpPromise = $http({
-                    method: "PUT",
-                    url: encodeUri(url(), uuid),
-                    data: data,
-                    params: defaultParams
-                });
-                return thenFactoryMethod(httpPromise, successcb, errorcb);
+                    var httpPromise = $http({
+                        method: "PUT",
+                        url: encodeUri(url, uuid),
+                        data: data,
+                        params: defaultParams
+                    });
+                    return thenFactoryMethod(httpPromise, successcb, errorcb);
+                } else {
+                    return undefined;
+                }
             };
 
             if (this.$id()) {
@@ -389,20 +457,26 @@ angular.module('dbResource', []).factory('dbResource', ['DB_CONFIG', 'APP_CONFIG
              * created_by: Username of creator
              * version: Document schema version
              */
+            var url = getUrl();
+            if (url) {
+                this.meta_key = {};
+                this.meta_key['created_at'] = new Date().toJSON();
+                this.meta_key['created_by'] = security.currentUser['name'];
+                this.meta_key['version'] = APP_CONFIG.version;
+                this.gActive = true;
 
-            this.meta_key = {};
-            this.meta_key['created_at'] = new Date().toJSON();
-            this.meta_key['created_by'] = security.currentUser['name'];
-            this.meta_key['version'] = APP_CONFIG.version;
-            this.gActive = true;
-
-            var httpPromise = $http({
-                method: "POST",
-                url: url(),
-                data: angular.extend({}, this, {type: collectionName}),
-                params: defaultParams
-            });
-            return thenFactoryMethod(httpPromise, successcb, errorcb);
+                var httpPromise = $http({
+                    method: "POST",
+                    url: url,
+                    data: angular.extend({}, this, {type: collectionName}),
+                    params: defaultParams
+                });
+                return thenFactoryMethod(httpPromise, successcb, errorcb);
+            } else {
+                var ecb = errorcb || angular.noop;
+                ecb(undefined, undefined);
+                return undefined;
+            }
         };
 
         Resource.prototype.$update = function (successcb, errorcb) {
@@ -413,21 +487,28 @@ angular.module('dbResource', []).factory('dbResource', ['DB_CONFIG', 'APP_CONFIG
              * updated_by: Username of last updater
              * version: Document schema version
              */
-            if(this.hasOwnProperty('meta_key')) {
-                this.meta_key['updated_at'] = new Date().toJSON();
-                this.meta_key['updated_by'] = security.currentUser['name'];
-                this.meta_key['version'] = APP_CONFIG.version;
+            var url = getUrl();
+            if (url) {
+                if(this.hasOwnProperty('meta_key')) {
+                    this.meta_key['updated_at'] = new Date().toJSON();
+                    this.meta_key['updated_by'] = security.currentUser['name'];
+                    this.meta_key['version'] = APP_CONFIG.version;
+                }
+                if(!this.hasOwnProperty('gActive')) {
+                    this.gActive = true;
+                }
+                var httpPromise = $http({
+                    method: "PUT",
+                    url: encodeUri(url, this.$id()),
+                    data: angular.extend({}, this, {_id: undefined}),
+                    params: defaultParams
+                });
+                return thenFactoryMethod(httpPromise, successcb, errorcb);
+            } else {
+                var ecb = errorcb || angular.noop;
+                ecb(undefined, undefined);
+                return undefined;
             }
-            if(!this.hasOwnProperty('gActive')) {
-                this.gActive = true;
-            }
-            var httpPromise = $http({
-                method: "PUT",
-                url: encodeUri(url(), this.$id()),
-                data: angular.extend({}, this, {_id: undefined}),
-                params: defaultParams
-            });
-            return thenFactoryMethod(httpPromise, successcb, errorcb);
         };
 
         Resource.prototype.$remove = function (successcb, errorcb) {
@@ -438,21 +519,27 @@ angular.module('dbResource', []).factory('dbResource', ['DB_CONFIG', 'APP_CONFIG
              * updated_by: Username of last updater
              * version: Document schema version
              */
+            var url = getUrl();
+            if (url) {
+                if(this.hasOwnProperty('meta_key')){
+                    this.meta_key['updated_at'] = new Date().toJSON();
+                    this.meta_key['updated_by'] = security.currentUser['name'];
+                    this.meta_key['version'] = APP_CONFIG.version;
+                }
+                this.gActive = false;
 
-            if(this.hasOwnProperty('meta_key')){
-                this.meta_key['updated_at'] = new Date().toJSON();
-                this.meta_key['updated_by'] = security.currentUser['name'];
-                this.meta_key['version'] = APP_CONFIG.version;
+                var httpPromise = $http({
+                    method: "PUT",
+                    url: encodeUri(url, this.$id()),
+                    data: angular.extend({}, this),
+                    params: angular.extend({}, defaultParams, {rev: this.$rev()})
+                });
+                return thenFactoryMethod(httpPromise, successcb, errorcb);
+            } else {
+                var ecb = errorcb || angular.noop;
+                ecb(undefined, undefined);
+                return undefined;
             }
-            this.gActive = false;
-
-            var httpPromise = $http({
-                method: "PUT",
-                url: encodeUri(url(), this.$id()),
-                data: angular.extend({}, this),
-                params: angular.extend({}, defaultParams, {rev: this.$rev()})
-            });
-            return thenFactoryMethod(httpPromise, successcb, errorcb);
         };
 
         Resource.prototype.$saveOrUpdate = function (savecb, updatecb, errorSavecb, errorUpdatecb) {

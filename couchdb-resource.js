@@ -85,7 +85,7 @@ angular.module('dbResource', []).factory('dbResource', ['DB_CONFIG', 'APP_CONFIG
                 return result;
             }, function (response) {
                 ecb(undefined, response);
-                result.queryActive = false
+                result.queryActive = false;
                 return undefined;
             });
         };

@@ -57,12 +57,12 @@ angular.module('dbResource', []).factory('dbResource', ['DB_CONFIG', 'APP_CONFIG
                         result.nextRow = null;
                     }
                 }
-               /* if (config.append) {
-                    for (var i in data.rows) response.rows.push(data.rows[i]);
-                    delete response.qConfig.append;
-                }
-                else {*/
-                    //response.rows = data.rows;
+                /* if (config.append) {
+                 for (var i in data.rows) response.rows.push(data.rows[i]);
+                 delete response.qConfig.append;
+                 }
+                 else {*/
+                //response.rows = data.rows;
                 /*}*/
 
                 if (isArray) {
@@ -86,7 +86,11 @@ angular.module('dbResource', []).factory('dbResource', ['DB_CONFIG', 'APP_CONFIG
             }, function (response) {
                 ecb(undefined, response);
                 result.queryActive = false;
-                return undefined;
+                return $q.reject({
+                    code: response.data.error,
+                    reason: response.data.reason,
+                    collection: collectionName
+                });
             });
         };
 
@@ -139,7 +143,10 @@ angular.module('dbResource', []).factory('dbResource', ['DB_CONFIG', 'APP_CONFIG
                 function(error){
                     var ecb = errorcb || angular.noop;
                     ecb(undefined, undefined);
-                    return undefined;
+                    return $q.reject({
+                        code: error.data.error,
+                        collection: collectionName
+                    });
                 }
             );
         };
@@ -156,7 +163,10 @@ angular.module('dbResource', []).factory('dbResource', ['DB_CONFIG', 'APP_CONFIG
             } else {
                 var ecb = errorcb || angular.noop;
                 ecb(undefined, undefined);
-                return undefined;
+                return $q.reject({
+                    code: 'url.notdefined',
+                    collection: collectionName
+                });
             }
 
 
@@ -192,7 +202,10 @@ angular.module('dbResource', []).factory('dbResource', ['DB_CONFIG', 'APP_CONFIG
             } else {
                 var ecb = errorcb || angular.noop;
                 ecb(undefined, undefined);
-                return undefined;
+                return $q.reject({
+                    code: 'url.notdefined',
+                    collection: collectionName
+                });
             }
 
 
@@ -209,7 +222,10 @@ angular.module('dbResource', []).factory('dbResource', ['DB_CONFIG', 'APP_CONFIG
             } else {
                 var ecb = errorcb || angular.noop;
                 ecb(undefined, undefined);
-                return undefined;
+                return $q.reject({
+                    code: 'url.notdefined',
+                    collection: collectionName
+                });
             }
         };
 
@@ -225,7 +241,10 @@ angular.module('dbResource', []).factory('dbResource', ['DB_CONFIG', 'APP_CONFIG
             } else {
                 var ecb = errorcb || angular.noop;
                 ecb(undefined, undefined);
-                return undefined;
+                return $q.reject({
+                    code: 'url.notdefined',
+                    collection: collectionName
+                });
             }
         };
 
@@ -237,7 +256,10 @@ angular.module('dbResource', []).factory('dbResource', ['DB_CONFIG', 'APP_CONFIG
             } else {
                 var ecb = errorcb || angular.noop;
                 ecb(undefined, undefined);
-                return undefined;
+                return $q.reject({
+                    code: 'url.notdefined',
+                    collection: collectionName
+                });
             }
         };
 
@@ -249,16 +271,19 @@ angular.module('dbResource', []).factory('dbResource', ['DB_CONFIG', 'APP_CONFIG
             var url = getUrl();
             if (url) {
                 return $http({
-                        method: "GET",
-                        url: url + "/"
-                    })
+                    method: "GET",
+                    url: url + "/"
+                })
                     .success(function (data) {
                         db.info = data;
                     });
             } else {
                 var ecb = errorcb || angular.noop;
                 ecb(undefined, undefined);
-                return undefined;
+                return $q.reject({
+                    code: 'url.notdefined',
+                    collection: collectionName
+                });
             }
         };
 
@@ -304,7 +329,10 @@ angular.module('dbResource', []).factory('dbResource', ['DB_CONFIG', 'APP_CONFIG
             } else {
                 var ecb = errorcb || angular.noop;
                 ecb(undefined, undefined);
-                return undefined;
+                return $q.reject({
+                    code: 'url.notdefined',
+                    collection: collectionName
+                });
             }
         };
 
@@ -317,7 +345,10 @@ angular.module('dbResource', []).factory('dbResource', ['DB_CONFIG', 'APP_CONFIG
                     {params: angular.extend({}, defaultParams, getParams(qparams))});
                 return thenFactoryMethod(httpPromise, successcb, errorcb, true);
             } else {
-                return undefined;
+                return $q.reject({
+                    code: 'url.notdefined',
+                    collection: collectionName
+                });
             }
         };
 
@@ -387,7 +418,10 @@ angular.module('dbResource', []).factory('dbResource', ['DB_CONFIG', 'APP_CONFIG
                     });
                     return thenFactoryMethod(httpPromise, successcb, errorcb);
                 } else {
-                    return undefined;
+                    return $q.reject({
+                        code: 'url.notdefined',
+                        collection: collectionName
+                    });
                 }
             };
 
@@ -400,42 +434,45 @@ angular.module('dbResource', []).factory('dbResource', ['DB_CONFIG', 'APP_CONFIG
                     },
                     function(error){
                         errorcb(undefined, error);
-                        return undefined;
+                        return $q.reject({
+                            code: error.data.error,
+                            collection: collectionName
+                        });
                     }
                 );
             }
 
             /*this.getUUIDs(1).then(
-                function(uuids){
-                    var data = {
-                        'name': doc.file.filename,
-                        'url': '|D-'+new Date().toJSON()+'|V-'+APP_CONFIG.version+'|U-'+security.currentUser['name']+'|N-'+ doc.file.filename,
-                        '_id': uuids[0]
-                    };
-                    data.meta_key = {
-                        'created_at': new Date().toJSON(),
-                        'created_by': security.currentUser['name'],
-                        'version': APP_CONFIG.version,
-                    };
-                    data._attachments = {};
-                    data._attachments[data.url] = {
-                                'content_type': doc.file.filetype,
-                                'data': doc.file.base64
-                            };
+             function(uuids){
+             var data = {
+             'name': doc.file.filename,
+             'url': '|D-'+new Date().toJSON()+'|V-'+APP_CONFIG.version+'|U-'+security.currentUser['name']+'|N-'+ doc.file.filename,
+             '_id': uuids[0]
+             };
+             data.meta_key = {
+             'created_at': new Date().toJSON(),
+             'created_by': security.currentUser['name'],
+             'version': APP_CONFIG.version,
+             };
+             data._attachments = {};
+             data._attachments[data.url] = {
+             'content_type': doc.file.filetype,
+             'data': doc.file.base64
+             };
 
-                    var httpPromise = $http({
-                        method: "PUT",
-                        url: encodeUri(url, uuids[0]),
-                        data: data,
-                        params: defaultParams
-                    });
-                    return thenFactoryMethod(httpPromise, successcb, errorcb);
-                },
-                function(error){
-                    errorcb(undefined, error);
-                    return undefined;
-                }
-            );*/
+             var httpPromise = $http({
+             method: "PUT",
+             url: encodeUri(url, uuids[0]),
+             data: data,
+             params: defaultParams
+             });
+             return thenFactoryMethod(httpPromise, successcb, errorcb);
+             },
+             function(error){
+             errorcb(undefined, error);
+             return undefined;
+             }
+             );*/
 
         };
 
@@ -475,7 +512,10 @@ angular.module('dbResource', []).factory('dbResource', ['DB_CONFIG', 'APP_CONFIG
             } else {
                 var ecb = errorcb || angular.noop;
                 ecb(undefined, undefined);
-                return undefined;
+                return $q.reject({
+                    code: 'url.notdefined',
+                    collection: collectionName
+                });
             }
         };
 
@@ -507,7 +547,10 @@ angular.module('dbResource', []).factory('dbResource', ['DB_CONFIG', 'APP_CONFIG
             } else {
                 var ecb = errorcb || angular.noop;
                 ecb(undefined, undefined);
-                return undefined;
+                return $q.reject({
+                    code: 'url.notdefined',
+                    collection: collectionName
+                });
             }
         };
 
@@ -538,7 +581,10 @@ angular.module('dbResource', []).factory('dbResource', ['DB_CONFIG', 'APP_CONFIG
             } else {
                 var ecb = errorcb || angular.noop;
                 ecb(undefined, undefined);
-                return undefined;
+                return $q.reject({
+                    code: 'url.notdefined',
+                    collection: collectionName
+                });
             }
         };
 
@@ -556,22 +602,22 @@ angular.module('dbResource', []).factory('dbResource', ['DB_CONFIG', 'APP_CONFIG
         Resource.prototype.getUUIDs = function(cnt) {
 
             /*var server = this;
-            return $http ({
-                method:     "GET",
-                url:        url + "/_uuids",
-                params:     { count: cnt || 1 }
-            })
-                .success(function(data) {
-                    server.uuids = data.uuids;
-                });*/
+             return $http ({
+             method:     "GET",
+             url:        url + "/_uuids",
+             params:     { count: cnt || 1 }
+             })
+             .success(function(data) {
+             server.uuids = data.uuids;
+             });*/
 
             var httpPromise = $http.get(
                 DB_CONFIG.baseUrl + '/_uuids',
                 {params: angular.extend({}, defaultParams, { count: cnt || 1 })}).then(
-                    function(data){
-                        return data.data.uuids;
-                    }
-                );
+                function(data){
+                    return data.data.uuids;
+                }
+            );
             return httpPromise;
 
         };

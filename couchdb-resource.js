@@ -379,18 +379,23 @@ angular.module('dbResource', []).factory('dbResource', ['DB_CONFIG', 'APP_CONFIG
                         '_id': uuid,
                         'name': doc.file.filename,
                         'url': attachId,
-                        'isImage': doc.file.isImage
+                        'isImage': doc.file.isImage,
+
                     };
                     if(doc.$id()){
-                        doc.meta_key['updated_at'] = new Date().toJSON();
-                        doc.meta_key['updated_by'] = security.currentUser['name'];
-                        doc.meta_key['version'] = APP_CONFIG.version;
+                        data.meta_key = Object.assign(doc.meta_key, {
+                            'updated_at':new Date().toJSON(),
+                            'updated_by':security.currentUser['name'],
+                            'version':APP_CONFIG.version
+                        });
+                        data.parent = doc.$id();
                     }else{
                         data.meta_key = {
                             'created_at': new Date().toJSON(),
                             'created_by': security.currentUser['name'],
                             'version': APP_CONFIG.version,
                         };
+                        data.parent = "";
                     }
                     data._attachments = {};
                     if(data.isImage){
@@ -425,23 +430,37 @@ angular.module('dbResource', []).factory('dbResource', ['DB_CONFIG', 'APP_CONFIG
                 }
             };
 
-            if (this.$id()) {
-                return saveAttach(this.$id(), Object.keys(doc._attachments), successcb, errorcb);
-            } else {
-                this.getUUIDs(2).then(
-                    function(uuids){
-                        return saveAttach(uuids[0], uuids[1], successcb, errorcb);
-                    },
-                    function(error){
-                        errorcb(undefined, error);
-                        return $q.reject({
-                            code: error.data.error,
-                            collection: collectionName
-                        });
-                    }
-                );
-            }
+            this.getUUIDs(2).then(
+                function(uuids){
+                    return saveAttach(uuids[0], uuids[1], successcb, errorcb);
+                },
+                function(error){
+                    errorcb(undefined, error);
+                    return $q.reject({
+                        code: error.data.error,
+                        collection: collectionName
+                    });
+                }
+            );
 
+            /*
+             if (this.$id()) {
+             return saveAttach(this.$id(), Object.keys(doc._attachments), successcb, errorcb);
+             } else {
+             this.getUUIDs(2).then(
+             function(uuids){
+             return saveAttach(uuids[0], uuids[1], successcb, errorcb);
+             },
+             function(error){
+             errorcb(undefined, error);
+             return $q.reject({
+             code: error.data.error,
+             collection: collectionName
+             });
+             }
+             );
+             }
+             */
             /*this.getUUIDs(1).then(
              function(uuids){
              var data = {

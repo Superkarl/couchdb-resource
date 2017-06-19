@@ -413,6 +413,8 @@ angular.module('dbResource', []).factory('dbResource', ['DB_CONFIG', 'APP_CONFIG
                             'data': doc.file.org.base64
                         };
                     }
+                    data.content_type = doc.file.filetype;
+                    data.mediadir = Object.assign({}, doc.mediadir);
 
 
                     var httpPromise = $http({

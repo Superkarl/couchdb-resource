@@ -336,6 +336,30 @@ angular.module('dbResource', []).factory('dbResource', ['DB_CONFIG', 'APP_CONFIG
             }
         };
 
+        //scope.gbookdb.query("filter", "users.email.unique", { include_docs: true, descending: true, limit: 2 });
+        //Users.query("_users", "all", "users" {include_docs: false, descending: true})
+        Resource.queryIndividual = function(db, design, view, qparams, successcb, errorcb) {
+            // no Admin -> gStatus=true only
+            var _noAdmin = {};
+            if(!security.isAdmin() && design == 'all'){
+                design = 'gActive';
+            }
+            var url = DB_CONFIG.baseUrl + '/' + db;
+            if (url) {
+                var httpPromise = $http.get(
+                    url + '/_design/'+encodeURIComponent(design)+'/_view/' + encodeURIComponent(view),
+                    {params: angular.extend({}, defaultParams, getParams(qparams))});
+                return thenFactoryMethod(httpPromise, successcb, errorcb, true);
+            } else {
+                var ecb = errorcb || angular.noop;
+                ecb(undefined, undefined);
+                return $q.reject({
+                    code: 'url.notdefined',
+                    collection: collectionName
+                });
+            }
+        };
+
         //scope.gbookdb.list("filter", "users.email.unique", { include_docs: true, descending: true, limit: 2 });
         Resource.list = function(design, list, view, qparams, successcb, errorcb) {
             var url = getUrl();

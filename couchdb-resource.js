@@ -404,7 +404,9 @@ angular.module('dbResource', []).factory('dbResource', ['DB_CONFIG', 'APP_CONFIG
                         'name': doc.file.filename,
                         'url': attachId,
                         'isImage': doc.file.isImage,
-
+                        'isSignature': doc.file.isSignature,
+                        'isProfileImage': doc.file.isProfileImage,
+                        'parent': doc.parent
                     };
                     if(doc.$id()){
                         data.meta_key = Object.assign(doc.meta_key, {
@@ -412,14 +414,14 @@ angular.module('dbResource', []).factory('dbResource', ['DB_CONFIG', 'APP_CONFIG
                             'updated_by':security.currentUser['name'],
                             'version':APP_CONFIG.version
                         });
-                        data.parent = doc.$id();
+                        data.parent.push(doc.$id());
                     }else{
                         data.meta_key = {
                             'created_at': new Date().toJSON(),
                             'created_by': security.currentUser['name'],
                             'version': APP_CONFIG.version,
                         };
-                        data.parent = "";
+                        data.parent = [];
                     }
                     data._attachments = {};
                     if(data.isImage){
@@ -615,6 +617,41 @@ angular.module('dbResource', []).factory('dbResource', ['DB_CONFIG', 'APP_CONFIG
                     this.meta_key['version'] = APP_CONFIG.version;
                 }
                 this.gActive = false;
+
+                var httpPromise = $http({
+                    method: "PUT",
+                    url: encodeUri(url, this.$id()),
+                    data: angular.extend({}, this),
+                    params: angular.extend({}, defaultParams, {rev: this.$rev()})
+                });
+                return thenFactoryMethod(httpPromise, successcb, errorcb);
+            } else {
+                var ecb = errorcb || angular.noop;
+                ecb(undefined, undefined);
+                return $q.reject({
+                    code: 'url.notdefined',
+                    collection: collectionName
+                });
+            }
+        };
+
+        Resource.prototype.$delete = function (successcb, errorcb) {
+
+            // @url https://ehealthafrica.github.io/couchdb-best-practices/#two-ways-of-deleting-documents
+            /**
+             * updated_at: Date of last update date.toJSON()
+             * updated_by: Username of last updater
+             * version: Document schema version
+             */
+            var url = getUrl();
+            if (url) {
+                if(this.hasOwnProperty('meta_key')){
+                    this.meta_key['updated_at'] = new Date().toJSON();
+                    this.meta_key['updated_by'] = security.currentUser['name'];
+                    this.meta_key['version'] = APP_CONFIG.version;
+                }
+                this.gActive = false;
+                this._deleted = true;
 
                 var httpPromise = $http({
                     method: "PUT",

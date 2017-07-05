@@ -248,10 +248,12 @@ angular.module('dbResource', []).factory('dbResource', ['DB_CONFIG', 'APP_CONFIG
             }
         };
 
-        Resource.getById = function (id, successcb, errorcb) {
+        Resource.getById = function (id, qparams, successcb, errorcb) {
             var url = getUrl();
             if (url) {
-                var httpPromise = $http.get(url + '/' + id, {params: defaultParams});
+                var httpPromise = $http.get(
+                    url + '/' + id,
+                    {params: angular.extend({}, defaultParams, getParams(qparams))});
                 return thenFactoryMethod(httpPromise, successcb, errorcb);
             } else {
                 var ecb = errorcb || angular.noop;
@@ -441,6 +443,7 @@ angular.module('dbResource', []).factory('dbResource', ['DB_CONFIG', 'APP_CONFIG
                     }
                     data.content_type = doc.file.filetype;
                     data.mediadir = Object.assign({}, doc.mediadir);
+                    data.gActive = true;
 
 
                     var httpPromise = $http({

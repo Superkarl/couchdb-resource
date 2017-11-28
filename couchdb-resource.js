@@ -401,6 +401,9 @@ angular.module('dbResource', []).factory('dbResource', ['DB_CONFIG', 'APP_CONFIG
             var saveAttach = function(uuid, attachId, successcb, errorcb){
                 var url = getUrl();
                 if (url) {
+
+                    var otherParams = angular.copy(doc);
+                    delete otherParams['file'];
                     var data = {
                         '_id': uuid,
                         'name': doc.file.filename,
@@ -410,6 +413,10 @@ angular.module('dbResource', []).factory('dbResource', ['DB_CONFIG', 'APP_CONFIG
                         'isProfileImage': doc.file.isProfileImage,
                         'parent': doc.parent
                     };
+                    data = angular.extend({}, data, otherParams);
+
+                    //console.log(data); exit();
+
                     if(doc.$id()){
                         data.meta_key = Object.assign(doc.meta_key, {
                             'updated_at':new Date().toJSON(),
@@ -674,7 +681,7 @@ angular.module('dbResource', []).factory('dbResource', ['DB_CONFIG', 'APP_CONFIG
         };
 
         Resource.prototype.$saveOrUpdate = function (savecb, updatecb, errorSavecb, errorUpdatecb) {
-            if (collectionName == 'attachments'){
+            if ((collectionName == 'attachments') || (collectionName == 'tenants')){
                 return this.$attach(updatecb, errorUpdatecb);
             }
             if (this.$id()) {

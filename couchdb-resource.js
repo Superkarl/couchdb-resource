@@ -404,6 +404,8 @@ angular.module('dbResource', []).factory('dbResource', ['DB_CONFIG', 'APP_CONFIG
 
                     var otherParams = angular.copy(doc);
                     delete otherParams['file'];
+                    delete otherParams['_id'];
+                    delete otherParams['_rev'];
                     var data = {
                         '_id': uuid,
                         'name': doc.file.filename,
@@ -413,7 +415,7 @@ angular.module('dbResource', []).factory('dbResource', ['DB_CONFIG', 'APP_CONFIG
                         'isProfileImage': doc.file.isProfileImage,
                         'parent': doc.parent
                     };
-                    data = angular.extend({}, data, otherParams);
+                    data = angular.extend({}, otherParams, data);
 
                     //console.log(data); exit();
 
